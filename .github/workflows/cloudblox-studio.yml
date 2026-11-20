@@ -16,7 +16,7 @@ jobs:
           app=Payload/CloudBlox.app
           mkdir -p "$app"
           sdk="$(xcrun --sdk iphoneos --show-sdk-path)"
-          xcrun --sdk iphoneos swiftc -parse-as-library -target arm64-apple-ios17.0 -sdk "$sdk" -O cloudblox/CloudBlox.swift -o "$app/CloudBlox"
+          xcrun --sdk iphoneos swiftc -parse-as-library -target arm64-apple-ios17.0 -sdk "$sdk" -O cloudblox/*.swift -o "$app/CloudBlox"
           cp cloudblox/Info.plist "$app/Info.plist"
           plutil -lint "$app/Info.plist"
           test "$(plutil -extract CFBundleExecutable raw "$app/Info.plist")" = CloudBlox

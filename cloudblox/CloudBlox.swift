@@ -1,9 +1,14 @@
 import SwiftUI
 
 struct Item: Codable, Identifiable {
+    struct AssetType: Codable { let id: Int }
     let id: Int
     let name: String
     var bundle: Bool?
+    var kind: Int?
+    var assetType: AssetType?
+    var slot: Int? { kind ?? assetType?.id }
+    var isHeadless: Bool { bundle == true ? id == 201 : id == 134082579 }
     var key: String { "\(bundle == true ? "bundle" : "asset")-\(id)" }
     var url: URL { URL(string: "https://www.roblox.com/\(bundle == true ? "bundles" : "catalog")/\(id)")! }
 }
@@ -18,7 +23,7 @@ struct Look: Codable, Identifiable {
 struct Account: Decodable { let id: Int; let name: String }
 struct Accounts: Decodable { let data: [Account] }
 struct Avatar: Decodable { let assets: [Item] }
-struct Thumbnail: Decodable { let imageUrl: URL? }
+struct Thumbnail: Decodable { let imageUrl: URL?; let targetId: Int? }
 struct Thumbnails: Decodable { let data: [Thumbnail] }
 
 enum PublicAvatar {
@@ -84,8 +89,8 @@ struct Studio: View {
 
     private let quick = [
         Item(id: 201, name: "Headless Horseman", bundle: true),
-        Item(id: 1365767, name: "Valkyrie Helm"),
-        Item(id: 1029025, name: "Classic Fedora"),
+        Item(id: 1365767, name: "Valkyrie Helm", kind: 8),
+        Item(id: 1029025, name: "Classic Fedora", kind: 8),
     ]
     private var saved: [Look] { (try? JSONDecoder().decode([Look].self, from: savedData)) ?? [] }
 
@@ -109,6 +114,7 @@ struct Studio: View {
                             }.buttonStyle(.borderedProminent).disabled(importing || query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                             if !notice.isEmpty { Text(notice).font(.footnote).foregroundStyle(.secondary) }
                         }
+                        FittingRoom(items: look.items)
                         if showImage, let url = look.avatar {
                             VStack(alignment: .leading) {
                                 Text("Original avatar").font(.headline)
@@ -164,6 +170,11 @@ struct Studio: View {
                     }.padding(24).frame(maxWidth: 760).frame(maxWidth: .infinity)
                 }.scrollDismissesKeyboard(.interactively)
             }.tabItem { Label("Studio", systemImage: "square.and.pencil") }.tag("Studio")
+
+            CatalogShop { item in
+                if !look.items.contains(where: { $0.key == item.key }) { look.items.append(item) }
+                tab = "Studio"
+            }.tabItem { Label("Shop", systemImage: "bag") }.tag("Shop")
 
             NavigationStack {
                 List {
