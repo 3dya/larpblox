@@ -1,0 +1,30 @@
+name: Build CloudBlox Studio
+on:
+  push:
+    branches: [xohus/cloudblox-studio]
+    paths: ["cloudblox/**", ".github/workflows/cloudblox-studio.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and package iPhone and iPad build
+        run: |
+          app=Payload/CloudBlox.app
+          mkdir -p "$app"
+          sdk="$(xcrun --sdk iphoneos --show-sdk-path)"
+          xcrun --sdk iphoneos swiftc -parse-as-library -target arm64-apple-ios17.0 -sdk "$sdk" -O cloudblox/CloudBlox.swift -o "$app/CloudBlox"
+          cp cloudblox/Info.plist "$app/Info.plist"
+          plutil -lint "$app/Info.plist"
+          test "$(plutil -extract CFBundleExecutable raw "$app/Info.plist")" = CloudBlox
+          file "$app/CloudBlox" | grep -q arm64
+          zip -qry CloudBlox-Studio-unsigned.ipa Payload
+          unzip -tq CloudBlox-Studio-unsigned.ipa
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CloudBlox-Studio-unsigned
+          path: CloudBlox-Studio-unsigned.ipa
+          if-no-files-found: error
